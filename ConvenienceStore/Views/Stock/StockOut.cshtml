@@ -1,0 +1,139 @@
+﻿@model List<ConvenienceStore.Models.InventoryItem>
+@{
+    ViewData["Title"] = "Stock Out";
+}
+
+<div class="container-fluid py-4">
+    <div class="container-fluid py-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0"><i class="bi bi-box-arrow-up me-2"></i>Stock Out</h3>
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-light btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <!-- Alert Messages -->
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success d-flex align-items-center alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <div>@TempData["SuccessMessage"]</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger d-flex align-items-center alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div>@TempData["ErrorMessage"]</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <!-- Stock Out Form -->
+                <form asp-action="StockOut" method="post" class="needs-validation" novalidate>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="itemId" class="form-label">Select Item</label>
+                            <select class="form-select" id="itemId" name="itemId" required>
+                                <option value="" selected disabled>-- Select Item --</option>
+                                @foreach (var item in Model)
+                                {
+                                    <option value="@item.Id" data-stock="@item.CurrentStock">
+                                        @item.Name (@item.Description) - Available: @item.CurrentStock
+                                    </option>
+                                }
+                            </select>
+                            <div class="invalid-feedback">Please select an item</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="quantity" class="form-label">Quantity</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                                <button class="btn btn-danger" type="submit" id="stockOutBtn">
+                                    <i class="bi bi-box-arrow-up me-1"></i>Process Stock Out
+                                </button>
+                                <div class="invalid-feedback">Please enter a valid quantity</div>
+                            </div>
+                            <small id="availableStockHelp" class="form-text text-muted">Available: <span id="availableStockValue">0</span></small>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Inventory Summary -->
+                <div class="mt-5">
+                    <h5 class="mb-3"><i class="bi bi-clipboard-data me-2"></i>Inventory Summary</h5>
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        @foreach (var item in Model)
+                        {
+                            <div class="col">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="card-title mb-0">@item.Name</h6>
+                                            <span class="badge bg-secondary">@item.Description</span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <small class="text-muted">Available</small>
+                                                <span class="fw-bold @(item.CurrentStock < 5 ? "text-danger" : "text-success")">
+                                                    @item.CurrentStock
+                                                </span>
+                                            </div>
+                                            @if (item.MaxStockQuantity.HasValue)
+                                            {
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar @GetProgressBarClass(item)"
+                                                         role="progressbar"
+                                                         style="width: @(Math.Min(100, (item.CurrentStock * 100) / item.MaxStockQuantity.Value))%;"></div>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">Max: @(item.MaxStockQuantity?.ToString() ?? "∞")</small>
+                                            <a href="#" class="btn btn-sm btn-outline-danger quick-stock-out"
+                                               data-item-id="@item.Id" data-item-name="@item.Name">
+                                                <i class="bi bi-dash"></i> Out
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetProgressBarClass(InventoryItem item)
+    {
+        if (!item.MaxStockQuantity.HasValue) return "bg-secondary";
+
+        var percentage = (item.CurrentStock * 100) / item.MaxStockQuantity.Value;
+        return percentage switch
+        {
+            >= 80 => "bg-success",
+            >= 50 => "bg-info",
+            >= 20 => "bg-warning",
+            _ => "bg-danger"
+        };
+    }
+}
+
+@section Scripts {
+    <script src="~/js/stock-out.js"></script>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="~/css/stock-out.css">
+}

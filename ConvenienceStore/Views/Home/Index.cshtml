@@ -1,0 +1,171 @@
+﻿@model List<ConvenienceStore.Models.InventoryItem>
+
+@{
+    ViewData["Title"] = "Stock Overview";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-6 fw-bold text-primary">Stock Management Dashboard</h1>
+        <div class="d-flex gap-2">
+            <a asp-controller="Stock" asp-action="StockIn" class="btn btn-success">
+                <i class="bi bi-box-arrow-in-down"></i> Stock In
+            </a>
+            <a asp-controller="Stock" asp-action="StockOut" class="btn btn-danger">
+                <i class="bi bi-box-arrow-up"></i> Stock Out
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Current Stock Levels</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Item</th>
+                                    <th>Description</th>
+                                    <th class="text-end">Current Stock</th>
+                                    <th class="text-end pe-4">Max Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td class="ps-4 fw-bold">@item.Name</td>
+                                        <td>
+                                            <span class="badge bg-secondary">@item.Description</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="@GetStockLevelClass(item.CurrentStock, item.MaxStockQuantity)">
+                                                @item.CurrentStock
+                                            </span>
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            @(item.MaxStockQuantity?.ToString() ?? "∞")
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <small class="text-muted">Last updated @DateTime.Now.ToString("MMM dd, yyyy hh:mm tt")</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        @foreach (var item in Model)
+        {
+            <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title mb-0">@item.Name</h5>
+                            <span class="badge bg-primary">@item.Description</span>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Current Stock</span>
+                                <span class="fw-bold @GetStockLevelClass(item.CurrentStock, item.MaxStockQuantity)">
+                                    @item.CurrentStock
+                                </span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                @{
+                                    var percentage = item.MaxStockQuantity.HasValue
+                                    ? Math.Min(100, (item.CurrentStock * 100) / item.MaxStockQuantity.Value)
+                                    : 0;
+                                }
+                                <div class="progress-bar @GetProgressBarClass(percentage)"
+                                     role="progressbar"
+                                     style="width: @percentage%;"
+                                     aria-valuenow="@percentage"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">Max: @(item.MaxStockQuantity?.ToString() ?? "No limit")</small>
+                            <div class="btn-group btn-group-sm">
+                                <a asp-controller="Stock" asp-action="StockIn" asp-route-itemId="@item.Id"
+                                   class="btn btn-outline-success btn-sm">
+                                    <i class="bi bi-plus"></i>
+                                </a>
+                                <a asp-controller="Stock" asp-action="StockOut" asp-route-itemId="@item.Id"
+                                   class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-dash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@functions {
+    string GetStockLevelClass(int currentStock, int? maxStock)
+    {
+        if (!maxStock.HasValue) return "text-dark";
+
+        var percentage = (currentStock * 100) / maxStock.Value;
+        return percentage switch
+        {
+            >= 80 => "text-success",
+            >= 50 => "text-primary",
+            >= 20 => "text-warning",
+            _ => "text-danger"
+        };
+    }
+
+    string GetProgressBarClass(int percentage)
+    {
+        return percentage switch
+        {
+            >= 80 => "bg-success",
+            >= 50 => "bg-primary",
+            >= 20 => "bg-warning",
+            _ => "bg-danger"
+        };
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .card {
+            border-radius: 0.5rem;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        .progress {
+            border-radius: 4px;
+            background-color: #f0f0f0;
+        }
+        .table-hover tbody tr:hover {
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+        .badge {
+            font-size: 0.75em;
+            font-weight: 500;
+        }
+    </style>
+}
+
+
+
+
+
